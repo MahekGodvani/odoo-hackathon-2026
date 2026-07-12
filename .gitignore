@@ -13,3 +13,12 @@
 !middleware/**
 !models/
 !models/**
+!routes/**
+!routes/**
+!uploads/**
+!server.js
+!app.js
+!package.json
+!package-lock.json
+!uploads/
+!uploads/**
