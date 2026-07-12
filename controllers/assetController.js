@@ -239,10 +239,80 @@ const deleteAsset = async (req, res) => {
   }
 };
 
+const getAssetQRCode = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const asset = await Asset.findByPk(id);
+    if (!asset) {
+      return res.status(404).json({ message: 'Asset not found' });
+    }
+    
+    let qrCodeUrl = asset.qrCodeUrl;
+    if (!qrCodeUrl) {
+      qrCodeUrl = await generateAssetQRCode(asset.id);
+      if (qrCodeUrl) {
+        asset.qrCodeUrl = qrCodeUrl;
+        await asset.save();
+      }
+    }
+    
+    const { format } = req.query;
+    if (format === 'image' && qrCodeUrl) {
+      const base64Data = qrCodeUrl.replace(/^data:image\/png;base64,/, "");
+      const img = Buffer.from(base64Data, 'base64');
+      res.writeHead(200, {
+        'Content-Type': 'image/png',
+        'Content-Length': img.length
+      });
+      return res.end(img);
+    }
+    
+    return res.status(200).json({ qrCodeUrl });
+  } catch (error) {
+    console.error('Error fetching asset QR code:', error);
+    return res.status(500).json({ message: 'Server error retrieving QR code' });
+  }
+};
+
+const generateGeneralQRCode = async (req, res) => {
+  try {
+    const { text, width = 300 } = req.query;
+    if (!text) {
+      return res.status(400).json({ message: 'Text query parameter is required' });
+    }
+    
+    const qrCodeDataUrl = await QRCode.toDataURL(text, {
+      color: {
+        dark: '#1e293b',
+        light: '#ffffff'
+      },
+      width: parseInt(width) || 300
+    });
+    
+    const { format } = req.query;
+    if (format === 'image') {
+      const base64Data = qrCodeDataUrl.replace(/^data:image\/png;base64,/, "");
+      const img = Buffer.from(base64Data, 'base64');
+      res.writeHead(200, {
+        'Content-Type': 'image/png',
+        'Content-Length': img.length
+      });
+      return res.end(img);
+    }
+    
+    return res.status(200).json({ qrCodeUrl: qrCodeDataUrl });
+  } catch (error) {
+    console.error('Error generating general QR code:', error);
+    return res.status(500).json({ message: 'Server error generating QR code' });
+  }
+};
+
 module.exports = {
   getAssets,
   getAssetById,
   createAsset,
   updateAsset,
   deleteAsset,
+  getAssetQRCode,
+  generateGeneralQRCode,
 };

@@ -50,6 +50,8 @@ router.get('/', verifyToken, assetController.getAssets);
  *       404:
  *         description: Asset not found
  */
+router.get('/qrcode/generate', verifyToken, assetController.generateGeneralQRCode);
+router.get('/:id/qrcode', verifyToken, assetController.getAssetQRCode);
 router.get('/:id', verifyToken, assetController.getAssetById);
 
 /**

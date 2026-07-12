@@ -55,8 +55,8 @@ const apiTree = [
   { path: '/api/assets/{id}', method: 'delete', tag: 'Assets', summary: 'Delete asset' },
   { path: '/api/assets/{id}/status', method: 'put', tag: 'Assets', summary: 'Update asset status' },
   { path: '/api/assets/{id}/history', method: 'get', tag: 'Assets', summary: 'Get asset audit history' },
-  { path: '/api/assets/search', method: 'get', tag: 'Assets', summary: 'Search assets' },
-  { path: '/api/assets/filter', method: 'get', tag: 'Assets', summary: 'Filter assets' },
+  { path: '/api/assets/qrcode/generate', method: 'get', tag: 'Assets', summary: 'Generate general QR code for text' },
+  { path: '/api/assets/{id}/qrcode', method: 'get', tag: 'Assets', summary: 'Get asset QR code' },
   { path: '/api/assets/bulk-import', method: 'post', tag: 'Assets', summary: 'Bulk import assets' },
   { path: '/api/assets/export', method: 'get', tag: 'Assets', summary: 'Export assets list' },
 
