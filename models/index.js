@@ -14,6 +14,7 @@ const Document = require('./Document');
 const Notification = require('./Notification');
 const ActivityLog = require('./ActivityLog');
 const Setting = require('./Setting');
+const AssetRequest = require('./AssetRequest');
 
 // 1. Roles and Users
 Role.hasMany(User, { foreignKey: 'roleId', onDelete: 'RESTRICT' });
@@ -92,6 +93,16 @@ Notification.belongsTo(User, { foreignKey: 'userId', as: 'User' });
 User.hasMany(ActivityLog, { foreignKey: 'userId', onDelete: 'SET NULL' });
 ActivityLog.belongsTo(User, { foreignKey: 'userId', as: 'User' });
 
+// 15. Asset Requests — Employee raises ticket
+User.hasMany(AssetRequest, { foreignKey: 'employeeId', as: 'AssetRequests', onDelete: 'CASCADE' });
+AssetRequest.belongsTo(User, { foreignKey: 'employeeId', as: 'Requester' });
+
+User.hasMany(AssetRequest, { foreignKey: 'approvedBy', as: 'ApprovedRequests', onDelete: 'SET NULL' });
+AssetRequest.belongsTo(User, { foreignKey: 'approvedBy', as: 'Approver' });
+
+Asset.hasMany(AssetRequest, { foreignKey: 'approvedAssetId', as: 'AssignedRequests', onDelete: 'SET NULL' });
+AssetRequest.belongsTo(Asset, { foreignKey: 'approvedAssetId', as: 'ApprovedAsset' });
+
 module.exports = {
   sequelize,
   Role,
@@ -109,4 +120,5 @@ module.exports = {
   Notification,
   ActivityLog,
   Setting,
+  AssetRequest,
 };

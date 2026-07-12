@@ -15,6 +15,9 @@ const vendorRoutes = require('./routes/vendors');
 const userRoutes = require('./routes/users');
 const reportRoutes = require('./routes/reports');
 const settingRoutes = require('./routes/settings');
+const aiRoutes = require('./routes/ai');
+const notificationRoutes = require('./routes/notifications');
+const assetRequestRoutes = require('./routes/assetRequests');
 
 const helmet = require('helmet');
 const { generalLimiter, authLimiter } = require('./middleware/rateLimiter');
@@ -55,6 +58,9 @@ app.use('/api/vendors', vendorRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/settings', settingRoutes);
+app.use('/api/ai', aiRoutes);
+app.use('/api/notifications', notificationRoutes);
+app.use('/api/asset-requests', assetRequestRoutes);
 
 const mockRouter = require('./middleware/mockRouter');
 app.use('/api', mockRouter);

@@ -48,6 +48,8 @@ router.get('/schedules', verifyToken, maintenanceController.getSchedules);
  *         description: Maintenance schedule created successfully
  */
 router.post('/schedules', verifyToken, isManager, maintenanceController.createSchedule);
+router.put('/schedules/:id', verifyToken, isManager, maintenanceController.updateSchedule);
+router.delete('/schedules/:id', verifyToken, isManager, maintenanceController.deleteSchedule);
 
 /**
  * @openapi

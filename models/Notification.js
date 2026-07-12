@@ -11,6 +11,11 @@ const Notification = sequelize.define('Notification', {
     type: DataTypes.INTEGER,
     allowNull: false,
   },
+  type: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    defaultValue: 'info', // success, warning, reminder, info
+  },
   title: {
     type: DataTypes.STRING,
     allowNull: false,

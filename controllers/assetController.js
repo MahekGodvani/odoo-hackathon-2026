@@ -1,12 +1,16 @@
 const QRCode = require('qrcode');
 const { Op } = require('sequelize');
-const { Asset, Category, Department, Vendor, Assignment, Transfer, MaintenanceRecord, RepairRequest, User } = require('../models');
+const { Asset, Category, Department, Vendor, Assignment, Transfer, MaintenanceRecord, RepairRequest, User, Notification } = require('../models');
 
 // Helper to generate QR code string
-const generateAssetQRCode = async (assetId) => {
+const generateAssetQRCode = async (assetId, req = null) => {
   try {
+    let hostname = 'localhost';
+    if (req && req.headers.host) {
+      hostname = req.headers.host.split(':')[0];
+    }
     // Generate a deep link or data summary to encode
-    const link = `http://localhost:5173/assets/${assetId}`;
+    const link = `http://${hostname}:5173/assets/${assetId}`;
     const qrCodeDataUrl = await QRCode.toDataURL(link, {
       color: {
         dark: '#1e293b',  // Dark slate for premium styling
@@ -34,7 +38,7 @@ const getAssets = async (req, res) => {
     if (condition) whereClause.condition = condition;
 
     if (search) {
-      whereClause([Op.or]) = [
+      whereClause[Op.or] = [
         { name: { [Op.like]: `%${search}%` } },
         { serialNumber: { [Op.like]: `%${search}%` } },
         { model: { [Op.like]: `%${search}%` } },
@@ -146,10 +150,37 @@ const createAsset = async (req, res) => {
     });
 
     // Generate and save QR Code
-    const qrCodeUrl = await generateAssetQRCode(asset.id);
+    const qrCodeUrl = await generateAssetQRCode(asset.id, req);
     if (qrCodeUrl) {
       asset.qrCodeUrl = qrCodeUrl;
       await asset.save();
+    }
+
+    // Create notifications for asset registration
+    try {
+      const creatorName = req.user && req.user.name ? req.user.name : 'Admin';
+      const adminsAndManagers = await User.findAll({
+        where: {
+          roleId: [1, 2] // 1: Admin, 2: Manager
+        }
+      });
+
+      const notificationsToCreate = [];
+      adminsAndManagers.forEach(user => {
+        notificationsToCreate.push({
+          userId: user.id,
+          title: 'Asset Registered Successfully',
+          message: `Asset "${name}" successfully registered by ${creatorName}.`,
+          type: 'success',
+          status: 'Unread'
+        });
+      });
+
+      if (notificationsToCreate.length > 0) {
+        await Notification.bulkCreate(notificationsToCreate);
+      }
+    } catch (notifErr) {
+      console.error('Failed to create asset registration notifications:', notifErr);
     }
 
     return res.status(201).json(asset);
@@ -209,7 +240,7 @@ const updateAsset = async (req, res) => {
 
     // Regen QR code if serial number changed (in case we encode serial number or details link)
     if (serialNumber !== undefined) {
-      const qrCodeUrl = await generateAssetQRCode(asset.id);
+      const qrCodeUrl = await generateAssetQRCode(asset.id, req);
       if (qrCodeUrl) {
         asset.qrCodeUrl = qrCodeUrl;
         await asset.save();
@@ -247,14 +278,8 @@ const getAssetQRCode = async (req, res) => {
       return res.status(404).json({ message: 'Asset not found' });
     }
     
-    let qrCodeUrl = asset.qrCodeUrl;
-    if (!qrCodeUrl) {
-      qrCodeUrl = await generateAssetQRCode(asset.id);
-      if (qrCodeUrl) {
-        asset.qrCodeUrl = qrCodeUrl;
-        await asset.save();
-      }
-    }
+    // Always generate dynamically so the scanned URL contains the correct client-access hostname/IP address
+    const qrCodeUrl = await generateAssetQRCode(asset.id, req);
     
     const { format } = req.query;
     if (format === 'image' && qrCodeUrl) {

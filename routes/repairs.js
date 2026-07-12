@@ -84,5 +84,6 @@ router.post('/', verifyToken, repairController.createRepair);
  *         description: Repair ticket successfully updated
  */
 router.put('/:id', verifyToken, isTech, repairController.updateRepair);
+router.delete('/:id', verifyToken, isTech, repairController.deleteRepair);
 
 module.exports = router;

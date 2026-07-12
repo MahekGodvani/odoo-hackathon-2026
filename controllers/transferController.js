@@ -70,7 +70,40 @@ const createTransfer = async (req, res) => {
   }
 };
 
+const deleteTransfer = async (req, res) => {
+  try {
+    const transfer = await Transfer.findByPk(req.params.id);
+    if (!transfer) {
+      return res.status(404).json({ message: 'Transfer record not found' });
+    }
+    await transfer.destroy();
+    return res.status(200).json({ message: 'Transfer record deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting transfer:', error);
+    return res.status(500).json({ message: 'Server error deleting transfer' });
+  }
+};
+
+const updateTransfer = async (req, res) => {
+  try {
+    const transfer = await Transfer.findByPk(req.params.id);
+    if (!transfer) {
+      return res.status(404).json({ message: 'Transfer record not found' });
+    }
+    const { status, notes } = req.body;
+    if (status) transfer.status = status;
+    if (notes !== undefined) transfer.notes = notes;
+    await transfer.save();
+    return res.status(200).json({ message: 'Transfer updated successfully', transfer });
+  } catch (error) {
+    console.error('Error updating transfer:', error);
+    return res.status(500).json({ message: 'Server error updating transfer' });
+  }
+};
+
 module.exports = {
   getTransfers,
   createTransfer,
+  updateTransfer,
+  deleteTransfer,
 };

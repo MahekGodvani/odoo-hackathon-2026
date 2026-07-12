@@ -15,9 +15,9 @@ const mockEmployees = [
   { id: 103, name: 'Bob Johnson', email: 'bob@assetflow.com', role: 'Technician', status: 'active', department: 'Facilities' }
 ];
 
-const mockBookings = [
-  { id: 1, assetId: 1, employeeId: 101, employeeName: 'John Doe', assetName: 'MacBook Pro 16', startDate: '2026-07-15', endDate: '2026-07-20', status: 'approved' },
-  { id: 2, assetId: 2, employeeId: 102, employeeName: 'Jane Smith', assetName: 'Dell Monitor 27', startDate: '2026-07-18', endDate: '2026-07-25', status: 'pending' }
+let mockBookings = [
+  { id: 1, resourceId: 'Conference Room A', bookedBy: 'John Doe', type: 'Room', startDate: '2026-07-15', endDate: '2026-07-15', time: '10:00 AM - 12:00 PM', status: 'confirmed' },
+  { id: 2, resourceId: 'Team Van #02', bookedBy: 'Jane Smith', type: 'Vehicle', startDate: '2026-07-18', endDate: '2026-07-18', time: '09:00 AM - 05:00 PM', status: 'pending' }
 ];
 
 const mockAudits = [
@@ -28,6 +28,14 @@ const mockAudits = [
 const mockActivityLogs = [
   { id: 501, userId: 1, userName: 'Admin User', action: 'CHECKOUT_ASSET', target: 'Asset #1', timestamp: '2026-07-12T10:15:00Z' },
   { id: 502, userId: 2, userName: 'Manager User', action: 'CREATE_MAINTENANCE', target: 'Schedule #2', timestamp: '2026-07-12T10:20:00Z' }
+];
+
+let mockNotifications = [
+  { id: 1, type: 'success', title: 'Asset Registration Complete', desc: 'MacBook Pro #2847 successfully registered by Admin', time: '2 min ago', read: false },
+  { id: 2, type: 'warning', title: 'Maintenance Overdue', desc: 'HP LaserJet Pro maintenance is past scheduled date', time: '30 min ago', read: false },
+  { id: 3, type: 'reminder', title: 'Upcoming Audit', desc: 'IT Department audit starts tomorrow at 9:00 AM', time: '1 hour ago', read: false },
+  { id: 4, type: 'info', title: 'Booking Confirmed', desc: 'Conference Room A booked for next week', time: '3 hours ago', read: false },
+  { id: 5, type: 'warning', title: 'Asset Return Overdue', desc: 'Dell Monitor #1923 assigned to staff is overdue', time: '5 hours ago', read: true },
 ];
 
 // Fallback Mock Router handler
@@ -69,17 +77,33 @@ router.all('*', (req, res, next) => {
   // Bookings Endpoints
   if (urlPath === '/bookings') {
     if (method === 'get') return res.status(200).json(mockBookings);
-    if (method === 'post') return res.status(201).json({ message: 'Booking created successfully', booking: { id: 3, ...req.body } });
+    if (method === 'post') {
+      const newBooking = { id: Date.now(), status: 'pending', ...req.body };
+      mockBookings.push(newBooking);
+      return res.status(201).json({ message: 'Booking created successfully', booking: newBooking });
+    }
   }
   if (urlPath.startsWith('/bookings/')) {
+    const bookingId = parseInt(urlPath.split('/bookings/')[1]);
     if (urlPath.endsWith('/approve')) return res.status(200).json({ message: 'Booking request approved successfully' });
     if (urlPath.endsWith('/reject')) return res.status(200).json({ message: 'Booking request rejected successfully' });
     if (urlPath === '/bookings/calendar') return res.status(200).json(mockBookings);
     if (urlPath === '/bookings/conflict-check') return res.status(200).json({ conflict: false, message: 'No scheduling conflicts found' });
-    
-    if (method === 'get') return res.status(200).json(mockBookings[0]);
-    if (method === 'put') return res.status(200).json({ message: 'Booking updated successfully' });
-    if (method === 'delete') return res.status(200).json({ message: 'Booking deleted successfully' });
+
+    if (method === 'get') {
+      const booking = mockBookings.find(b => b.id === bookingId);
+      return res.status(booking ? 200 : 404).json(booking || { message: 'Booking not found' });
+    }
+    if (method === 'put') {
+      const idx = mockBookings.findIndex(b => b.id === bookingId);
+      if (idx !== -1) mockBookings[idx] = { ...mockBookings[idx], ...req.body };
+      return res.status(200).json({ message: 'Booking updated successfully', booking: mockBookings[idx] });
+    }
+    if (method === 'delete') {
+      const idx = mockBookings.findIndex(b => b.id === bookingId);
+      if (idx !== -1) mockBookings.splice(idx, 1);
+      return res.status(200).json({ message: 'Booking deleted successfully' });
+    }
   }
 
   // Audits Endpoints
@@ -154,14 +178,25 @@ router.all('*', (req, res, next) => {
 
   // Notifications
   if (urlPath === '/notifications') {
-    return res.status(200).json([]);
+    if (method === 'get') {
+      return res.status(200).json(mockNotifications);
+    }
   }
   if (urlPath === '/notifications/read-all') {
-    return res.status(200).json({ message: 'All notifications marked as read' });
+    mockNotifications = mockNotifications.map(n => ({ ...n, read: true }));
+    return res.status(200).json({ message: 'All notifications marked as read', notifications: mockNotifications });
   }
   if (urlPath.startsWith('/notifications/')) {
-    if (urlPath.endsWith('/read')) return res.status(200).json({ message: 'Notification marked as read' });
-    if (method === 'delete') return res.status(200).json({ message: 'Notification deleted successfully' });
+    const parts = urlPath.split('/');
+    const cleanId = Number(parts[2]);
+    if (urlPath.endsWith('/read')) {
+      mockNotifications = mockNotifications.map(n => n.id === cleanId ? { ...n, read: true } : n);
+      return res.status(200).json({ message: 'Notification marked as read' });
+    }
+    if (method === 'delete') {
+      mockNotifications = mockNotifications.filter(n => n.id !== cleanId);
+      return res.status(200).json({ message: 'Notification deleted successfully' });
+    }
   }
 
   // Dashboard extra

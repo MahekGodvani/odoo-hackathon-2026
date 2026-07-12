@@ -1,4 +1,4 @@
-const { RepairRequest, Asset, User } = require('../models');
+const { RepairRequest, Asset, User, Notification } = require('../models');
 
 const getRepairs = async (req, res) => {
   try {
@@ -48,6 +48,41 @@ const createRepair = async (req, res) => {
     // Mark asset as Under Maintenance
     asset.status = 'Under Maintenance';
     await asset.save();
+
+    // Create notifications for the user who raised it and all admins/managers
+    try {
+      const adminsAndManagers = await User.findAll({
+        where: {
+          roleId: [1, 2] // 1: Admin, 2: Manager
+        }
+      });
+
+      const notificationsToCreate = [
+        {
+          userId: req.user.id,
+          title: 'Repair Request Submitted',
+          message: `Your repair request for asset "${asset.name}" has been logged successfully.`,
+          type: 'success',
+          status: 'Unread'
+        }
+      ];
+
+      adminsAndManagers.forEach(admin => {
+        if (admin.id !== req.user.id) {
+          notificationsToCreate.push({
+            userId: admin.id,
+            title: 'New Issue Raised',
+            message: `User "${req.user.name || req.user.email || 'Staff'}" raised a repair request for "${asset.name}" (${priority || 'Medium'} priority).`,
+            type: 'warning',
+            status: 'Unread'
+          });
+        }
+      });
+
+      await Notification.bulkCreate(notificationsToCreate);
+    } catch (notifErr) {
+      console.error('Failed to create repair notifications:', notifErr);
+    }
 
     return res.status(201).json(repair);
   } catch (error) {
@@ -100,8 +135,28 @@ const updateRepair = async (req, res) => {
   }
 };
 
+const deleteRepair = async (req, res) => {
+  try {
+    const repair = await RepairRequest.findByPk(req.params.id);
+    if (!repair) {
+      return res.status(404).json({ message: 'Repair request not found' });
+    }
+    const asset = await Asset.findByPk(repair.assetId);
+    if (asset && asset.status === 'Under Maintenance') {
+      asset.status = 'Available';
+      await asset.save();
+    }
+    await repair.destroy();
+    return res.status(200).json({ message: 'Repair request deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting repair request:', error);
+    return res.status(500).json({ message: 'Server error deleting repair request' });
+  }
+};
+
 module.exports = {
   getRepairs,
   createRepair,
   updateRepair,
+  deleteRepair,
 };

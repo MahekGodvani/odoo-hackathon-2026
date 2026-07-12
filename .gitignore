@@ -21,11 +21,11 @@
 !uploads/
 !uploads/**
 
-# Allow frontend directory
-!frontend/
-!frontend/**
+# Allow fronted directory
+!fronted/
+!fronted/**
 
-# Ignore frontend dependencies and build outputs
-frontend/node_modules/
-frontend/dist/
-frontend/.vite/
+# Ignore fronted dependencies and build outputs
+fronted/node_modules/
+fronted/dist/
+fronted/.vite/

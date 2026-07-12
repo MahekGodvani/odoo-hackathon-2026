@@ -96,5 +96,7 @@ router.post('/logout', authController.logout);
  *         description: Access token missing or invalid
  */
 router.get('/profile', verifyToken, authController.getProfile);
+router.put('/profile', verifyToken, authController.updateProfile);
+router.post('/change-password', verifyToken, authController.changePassword);
 
 module.exports = router;

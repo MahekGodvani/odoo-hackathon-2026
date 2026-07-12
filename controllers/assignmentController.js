@@ -1,4 +1,4 @@
-const { Assignment, Asset, User } = require('../models');
+const { Assignment, Asset, User, Notification } = require('../models');
 
 const getAssignments = async (req, res) => {
   try {
@@ -100,6 +100,45 @@ const returnAssignment = async (req, res) => {
       await assignment.Asset.save();
     }
 
+    // Create notifications for asset return
+    try {
+      const assetName = assignment.Asset ? assignment.Asset.name : `Asset #${assignment.assetId}`;
+      const employee = await User.findByPk(assignment.employeeId);
+      const employeeName = employee ? employee.name : `Employee #${assignment.employeeId}`;
+
+      const adminsAndManagers = await User.findAll({
+        where: {
+          roleId: [1, 2] // 1: Admin, 2: Manager
+        }
+      });
+
+      const notificationsToCreate = [
+        {
+          userId: assignment.employeeId,
+          title: 'Asset Return Processed',
+          message: `Your return of asset "${assetName}" has been successfully checked in.`,
+          type: 'success',
+          status: 'Unread'
+        }
+      ];
+
+      adminsAndManagers.forEach(user => {
+        if (user.id !== assignment.employeeId) {
+          notificationsToCreate.push({
+            userId: user.id,
+            title: 'Asset Checked In',
+            message: `Asset "${assetName}" returned by employee "${employeeName}".`,
+            type: 'info',
+            status: 'Unread'
+          });
+        }
+      });
+
+      await Notification.bulkCreate(notificationsToCreate);
+    } catch (notifErr) {
+      console.error('Failed to create return assignment notifications:', notifErr);
+    }
+
     return res.status(200).json({
       message: 'Asset successfully returned and checked in',
       assignment,
@@ -110,8 +149,28 @@ const returnAssignment = async (req, res) => {
   }
 };
 
+const deleteAssignment = async (req, res) => {
+  try {
+    const assignment = await Assignment.findByPk(req.params.id);
+    if (!assignment) {
+      return res.status(404).json({ message: 'Assignment not found' });
+    }
+    const asset = await Asset.findByPk(assignment.assetId);
+    if (asset) {
+      asset.status = 'Available';
+      await asset.save();
+    }
+    await assignment.destroy();
+    return res.status(200).json({ message: 'Assignment deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting assignment:', error);
+    return res.status(500).json({ message: 'Server error deleting assignment' });
+  }
+};
+
 module.exports = {
   getAssignments,
   createAssignment,
   returnAssignment,
+  deleteAssignment,
 };

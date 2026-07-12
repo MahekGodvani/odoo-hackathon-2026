@@ -157,10 +157,49 @@ const updateRecord = async (req, res) => {
   }
 };
 
+const deleteSchedule = async (req, res) => {
+  try {
+    const schedule = await MaintenanceSchedule.findByPk(req.params.id);
+    if (!schedule) {
+      return res.status(404).json({ message: 'Maintenance schedule not found' });
+    }
+    await schedule.destroy();
+    return res.status(200).json({ message: 'Maintenance schedule deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting schedule:', error);
+    return res.status(500).json({ message: 'Server error deleting maintenance schedule' });
+  }
+};
+
+const updateSchedule = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { assetId, title, description, frequency, nextDueDate, assignedTechnicianId } = req.body;
+    const schedule = await MaintenanceSchedule.findByPk(id);
+    if (!schedule) {
+      return res.status(404).json({ message: 'Maintenance schedule not found' });
+    }
+    await schedule.update({
+      assetId: assetId !== undefined ? assetId : schedule.assetId,
+      title: title !== undefined ? title : schedule.title,
+      description: description !== undefined ? description : schedule.description,
+      frequency: frequency !== undefined ? frequency : schedule.frequency,
+      nextDueDate: nextDueDate !== undefined ? nextDueDate : schedule.nextDueDate,
+      assignedTechnicianId: assignedTechnicianId !== undefined ? assignedTechnicianId : schedule.assignedTechnicianId,
+    });
+    return res.status(200).json(schedule);
+  } catch (error) {
+    console.error('Error updating schedule:', error);
+    return res.status(500).json({ message: 'Server error updating maintenance schedule' });
+  }
+};
+
 module.exports = {
   getSchedules,
   createSchedule,
   getRecords,
   createRecord,
   updateRecord,
+  deleteSchedule,
+  updateSchedule,
 };

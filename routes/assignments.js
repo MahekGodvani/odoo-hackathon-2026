@@ -107,5 +107,6 @@ router.put('/:id', verifyToken, isManager, assignmentController.returnAssignment
  *         description: Asset successfully returned
  */
 router.post('/return', verifyToken, isManager, assignmentController.returnAssignment);
+router.delete('/:id', verifyToken, isManager, assignmentController.deleteAssignment);
 
 module.exports = router;
