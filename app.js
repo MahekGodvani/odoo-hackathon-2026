@@ -18,11 +18,14 @@ const settingRoutes = require('./routes/settings');
 
 const helmet = require('helmet');
 const { generalLimiter, authLimiter } = require('./middleware/rateLimiter');
+const swaggerUi = require('swagger-ui-express');
+const swaggerSpec = require('./config/swagger');
 
 const app = express();
 
 // Apply security headers and middleware
 app.use(helmet({ crossOriginResourcePolicy: false }));
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
