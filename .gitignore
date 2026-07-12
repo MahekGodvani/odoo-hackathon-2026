@@ -1,0 +1,15 @@
+# Ignore all files and directories by default
+*
+
+# Allow the .gitignore file itself
+!.gitignore
+
+# Allow the specific directories to be tracked
+!config/
+!config/**
+!controllers/
+!controllers/**
+!middleware/
+!middleware/**
+!models/
+!models/**
