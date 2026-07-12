@@ -56,6 +56,9 @@ app.use('/api/users', userRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/settings', settingRoutes);
 
+const mockRouter = require('./middleware/mockRouter');
+app.use('/api', mockRouter);
+
 // Fallback Route for API
 app.get('/api', (req, res) => {
   res.json({ message: 'Welcome to the AssetFlow API' });
